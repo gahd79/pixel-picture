@@ -13,9 +13,11 @@ const drawModeSelect = document.getElementById('drawMode');
 const customCharInput = document.getElementById('customChar');
 // 添加保存按钮引用
 const saveBtn = document.getElementById('saveBtn');
+const saveVideoBtn = document.getElementById('saveVideoBtn');
 
 // 添加保存事件监听
 saveBtn.addEventListener('click', saveImage);
+saveVideoBtn.addEventListener('click', saveVideo);
 
 let imageData = null;
 let animationFrameId = null;
@@ -26,6 +28,10 @@ let sourceVideo = document.getElementById('sourceVideo');
 let videoStream = null;
 let videoProcessing = false;
 let videoAnimationFrameId = null;
+// 视频录制相关变量
+let mediaRecorder = null;
+let recordedChunks = [];
+let isRecording = false;
 
 // 初始化画布尺寸
 function initCanvasSize(img) {
@@ -93,6 +99,10 @@ function processVideoFrame() {
     videoProcessing = false;
     startVideoBtn.disabled = false;
     startVideoBtn.textContent = '处理视频';
+    // 停止录制
+    if (isRecording) {
+      stopRecording();
+    }
     return;
   }
 
@@ -197,7 +207,9 @@ imageInput.addEventListener('change', function (e) {
 
   // 隐藏视频处理按钮，显示图片处理按钮
   startVideoBtn.style.display = 'none';
+  saveVideoBtn.style.display = 'none';
   startBtn.style.display = 'inline-block';
+  saveBtn.style.display = 'inline-block';
   
   const reader = new FileReader();
   reader.onload = function (event) {
@@ -218,7 +230,9 @@ videoInput.addEventListener('change', function (e) {
 
   // 显示视频处理按钮，隐藏图片处理按钮
   startBtn.style.display = 'none';
+  saveBtn.style.display = 'none';
   startVideoBtn.style.display = 'inline-block';
+  saveVideoBtn.style.display = 'inline-block';
   
   // 为视频元素设置源
   const url = URL.createObjectURL(file);
@@ -261,14 +275,54 @@ startVideoBtn.addEventListener('click', function () {
     sourceVideo.pause();
     startVideoBtn.textContent = '处理视频';
     startVideoBtn.disabled = false;
+    // 停止录制
+    if (isRecording) {
+      stopRecording();
+    }
   } else {
     // 开始处理
     videoProcessing = true;
     startVideoBtn.textContent = '停止处理';
     sourceVideo.play();
+    // 自动开始录制
+    startRecording();
     processVideoFrame();
   }
 });
+
+// 开始录制
+function startRecording() {
+  // 重置录制数据
+  recordedChunks = [];
+  
+  // 创建媒体录制器
+  const stream = displayCanvas.captureStream(30); // 30 FPS
+  mediaRecorder = new MediaRecorder(stream, {
+    mimeType: 'video/webm;codecs=vp9'
+  });
+
+  mediaRecorder.ondataavailable = function(event) {
+    if (event.data.size > 0) {
+      recordedChunks.push(event.data);
+    }
+  };
+
+  mediaRecorder.onstop = function() {
+    saveVideoBtn.disabled = false;
+  };
+
+  mediaRecorder.start();
+  isRecording = true;
+  saveVideoBtn.disabled = true;
+}
+
+// 停止录制
+function stopRecording() {
+  if (isRecording && mediaRecorder) {
+    mediaRecorder.stop();
+    isRecording = false;
+  }
+}
 
 // 控件变化事件
 pixelSizeInput.addEventListener('change', resetDrawing);
@@ -325,4 +379,23 @@ function saveImage() {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+// 保存视频功能
+function saveVideo() {
+  if (recordedChunks.length === 0) {
+    alert('没有录制的视频可供保存');
+    return;
+  }
+
+  const blob = new Blob(recordedChunks, { type: 'video/webm' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  link.download = `pixel-video-${timestamp}.webm`;
+  link.href = url;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }

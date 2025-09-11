@@ -7,6 +7,26 @@ body {
   background: #f0f0f0;
 }
 
+/* 颜色区分 */
+#imageInput,
+#startBtn,
+#saveBtn {
+  background-color: lightcoral;
+  color: #000;
+}
+
+#videoInput,
+#startVideoBtn,
+#saveVideoBtn {
+  background-color: lightcyan;
+  color: #000;
+}
+
+#pixelSize,#scaleFactor,#pixelType,#drawMode {
+  background-color: lightyellow;
+  color: #000;
+}
+
 .container {
   background: white;
   padding: 2.083vw;

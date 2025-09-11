@@ -13,10 +13,14 @@
     <canvas id="sourceCanvas" hidden></canvas>
     <canvas id="displayCanvas"></canvas>
     <div class="controls">
+      <label for="imageInput">选择图像：</label>
       <input type="file" id="imageInput" accept="image/*">
       <button id="startBtn">处理图片</button>
+      <button id="saveBtn">保存图像</button>
+      <label for="imageInput">选择视频：</label>
       <input type="file" id="videoInput" accept="video/*">
       <button id="startVideoBtn">处理视频</button>
+      <button id="saveVideoBtn">保存视频</button>
       <label>像素尺寸：<input type="number" id="pixelSize" value="10" min="1"></label>
       <!-- 添加倍数选择控件 -->
       <label>图像倍数：
@@ -40,7 +44,6 @@
           <option value="direct">直接生成</option>
         </select>
       </label>
-      <button id="saveBtn">保存图像</button>
     </div>
   </div>
   <video id="sourceVideo" hidden></video>
