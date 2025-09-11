@@ -22,7 +22,10 @@ body {
   color: #000;
 }
 
-#pixelSize,#scaleFactor,#pixelType,#drawMode {
+#pixelSize,
+#scaleFactor,
+#pixelType,
+#drawMode {
   background-color: lightyellow;
   color: #000;
 }
@@ -115,7 +118,7 @@ input[type="number"] {
 }
 
 /* 添加移动端适配 */
-@media (max-width < 1000px) {
+@media (max-width = 375px) {
   .container {
     padding: 3.906vw;
     /* 15px / 384px ≈ 3.906vw (基于768px屏幕) */
@@ -158,21 +161,5 @@ input[type="number"] {
 
   canvas {
     max-width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .container {
-    padding: 4.167vw;
-    /* 10px / 240px ≈ 4.167vw (基于480px屏幕) */
-  }
-
-  button,
-  input[type="file"],
-  select {
-    padding: 5vw;
-    /* 12px / 240px ≈ 5vw (基于480px屏幕) */
-    font-size: 4.167vw;
-    /* 10px / 240px ≈ 4.167vw (基于480px屏幕) */
   }
 }

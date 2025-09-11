@@ -78,7 +78,7 @@ function drawPixelAnimation() {
   if (currentStep >= totalSteps) {
     cancelAnimationFrame(animationFrameId);
     startBtn.disabled = false;
-    isGenerationComplete = true;
+    isGenerationComplete = true;  
     return;
   }
 

@@ -14,7 +14,29 @@
       background: #f0f0f0;
     }
 
-    /* 添加移动端适配 */
+    /* 颜色区分 */
+    #imageInput,
+    #startBtn,
+    #saveBtn {
+      background-color: lightcoral;
+      color: #000;
+    }
+
+    #videoInput,
+    #startVideoBtn,
+    #saveVideoBtn {
+      background-color: lightcyan;
+      color: #000;
+    }
+
+    #pixelSize,
+    #scaleFactor,
+    #pixelType,
+    #drawMode {
+      background-color: lightyellow;
+      color: #000;
+    }
+
 
     .container {
       padding: 3.906vw;
@@ -64,12 +86,17 @@
 </head>
 
 <body>
-  <div class="container">
-    <canvas id="sourceCanvas" hidden></canvas>
+  <div class="container"><canvas id="sourceCanvas" hidden></canvas>
     <canvas id="displayCanvas"></canvas>
     <div class="controls">
+      <label for="imageInput">选择图像：</label>
       <input type="file" id="imageInput" accept="image/*">
-      <button id="startBtn">开始复原</button>
+      <button id="startBtn">处理图片</button>
+      <button id="saveBtn">保存图像</button>
+      <label for="imageInput">选择视频：</label>
+      <input type="file" id="videoInput" accept="video/*">
+      <button id="startVideoBtn">处理视频</button>
+      <button id="saveVideoBtn">保存视频</button>
       <label>像素尺寸：<input type="number" id="pixelSize" value="10" min="1"></label>
       <!-- 添加倍数选择控件 -->
       <label>图像倍数：
@@ -93,15 +120,16 @@
           <option value="direct">直接生成</option>
         </select>
       </label>
-      <button id="saveBtn">保存图像</button>
+      <video id="sourceVideo" hidden playsinline muted></video>
     </div>
   </div>
-  <script>
-    const sourceCanvas = document.getElementById('sourceCanvas');
+  <script>const sourceCanvas = document.getElementById('sourceCanvas');
     const displayCanvas = document.getElementById('displayCanvas');
     const ctx = displayCanvas.getContext('2d');
     const imageInput = document.getElementById('imageInput');
+    const videoInput = document.getElementById('videoInput');
     const startBtn = document.getElementById('startBtn');
+    const startVideoBtn = document.getElementById('startVideoBtn');
     const pixelSizeInput = document.getElementById('pixelSize');
     const scaleFactorSelect = document.getElementById('scaleFactor');
     const pixelTypeSelect = document.getElementById('pixelType');
@@ -110,14 +138,26 @@
     const customCharInput = document.getElementById('customChar');
     // 添加保存按钮引用
     const saveBtn = document.getElementById('saveBtn');
+    const saveVideoBtn = document.getElementById('saveVideoBtn');
 
     // 添加保存事件监听
     saveBtn.addEventListener('click', saveImage);
+    saveVideoBtn.addEventListener('click', saveVideo);
 
     let imageData = null;
     let animationFrameId = null;
     let currentStep = 0;
     let isGenerationComplete = false;
+    // 视频相关变量
+    let sourceVideo = document.getElementById('sourceVideo');
+    let videoStream = null;
+    let videoProcessing = false;
+    let videoAnimationFrameId = null;
+    // 视频录制相关变量
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let isRecording = false;
+    let recordedMimeType = 'video/webm'; // 默认MIME类型
 
     // 初始化画布尺寸
     function initCanvasSize(img) {
@@ -140,6 +180,18 @@
 
       // 获取像素数据
       imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+    }
+
+    // 初始化视频画布尺寸
+    function initVideoCanvasSize() {
+      const scaleFactor = scaleFactorSelect.value;
+
+      // 根据倍数调整视频尺寸
+      const targetWidth = Math.trunc(sourceVideo.videoWidth * scaleFactor);
+      const targetHeight = Math.trunc(sourceVideo.videoHeight * scaleFactor);
+
+      sourceCanvas.width = displayCanvas.width = targetWidth;
+      sourceCanvas.height = displayCanvas.height = targetHeight;
     }
 
     // 像素绘制动画
@@ -165,6 +217,49 @@
 
       currentStep++;
       animationFrameId = requestAnimationFrame(drawPixelAnimation);
+    }
+
+    // 视频像素化处理
+    function processVideoFrame() {
+      if (sourceVideo.paused || sourceVideo.ended) {
+        videoProcessing = false;
+        startVideoBtn.disabled = false;
+        startVideoBtn.textContent = '处理视频';
+        // 停止录制
+        if (isRecording) {
+          stopRecording();
+        }
+        return;
+      }
+
+      // 将当前视频帧绘制到源画布上
+      const sourceCtx = sourceCanvas.getContext('2d');
+      sourceCtx.drawImage(sourceVideo, 0, 0, sourceCanvas.width, sourceCanvas.height);
+
+      // 获取图像数据
+      imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+
+      // 像素化处理
+      const pixelSize = parseInt(pixelSizeInput.value);
+      const pixelType = pixelTypeSelect.value;
+      const cols = Math.ceil(displayCanvas.width / pixelSize);
+      const rows = Math.ceil(displayCanvas.height / pixelSize);
+
+      // 清除显示画布
+      ctx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
+
+      // 绘制像素化帧
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const x = col * pixelSize;
+          const y = row * pixelSize;
+          const color = getPixelColor(x, y, pixelSize);
+          drawPixel(x, y, pixelSize, pixelType, color);
+        }
+      }
+
+      // 继续处理下一帧
+      videoAnimationFrameId = requestAnimationFrame(processVideoFrame);
     }
 
     // 添加直接生成功能
@@ -231,11 +326,16 @@
       return `rgb(${data[index]}, ${data[index + 1]}, ${data[index + 2]})`;
     }
 
-
     // 事件监听
     imageInput.addEventListener('change', function (e) {
       const file = e.target.files[0];
       if (!file) return;
+
+      // 隐藏视频处理按钮，显示图片处理按钮
+      startVideoBtn.style.display = 'none';
+      saveVideoBtn.style.display = 'none';
+      startBtn.style.display = 'inline-block';
+      saveBtn.style.display = 'inline-block';
 
       const reader = new FileReader();
       reader.onload = function (event) {
@@ -248,6 +348,27 @@
         img.src = event.target.result;
       };
       reader.readAsDataURL(file);
+    });
+
+    videoInput.addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // 显示视频处理按钮，隐藏图片处理按钮
+      startBtn.style.display = 'none';
+      saveBtn.style.display = 'none';
+      startVideoBtn.style.display = 'inline-block';
+      saveVideoBtn.style.display = 'inline-block';
+
+      // 为视频元素设置源
+      const url = URL.createObjectURL(file);
+      sourceVideo.src = url;
+
+      sourceVideo.onloadedmetadata = function () {
+        initVideoCanvasSize();
+        ctx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
+        currentStep = 0;
+      };
     });
 
     startBtn.addEventListener('click', function () {
@@ -269,6 +390,120 @@
       }
     });
 
+    // 视频处理按钮事件
+    // ... existing code ...
+    // 视频处理按钮事件
+    startVideoBtn.addEventListener('click', function () {
+      if (videoProcessing) {
+        // 停止处理
+        videoProcessing = false;
+        if (videoAnimationFrameId) {
+          cancelAnimationFrame(videoAnimationFrameId);
+        }
+        sourceVideo.pause();
+        startVideoBtn.textContent = '处理视频';
+        startVideoBtn.disabled = false;
+        // 停止录制
+        if (isRecording) {
+          stopRecording();
+        }
+      } else {
+        // 开始处理
+        videoProcessing = true;
+        startVideoBtn.textContent = '停止处理';
+
+        // 处理移动端自动播放限制
+        const playPromise = sourceVideo.play();
+        if (playPromise !== undefined) {
+          playPromise.then(_ => {
+            // 自动开始录制
+            startRecording();
+            processVideoFrame();
+          }).catch(error => {
+            // 自动播放被拒绝，可能是在移动端
+            console.warn("Auto-play prevented: ", error);
+            videoProcessing = false;
+            startVideoBtn.textContent = '处理视频';
+            alert("请手动点击视频区域播放，然后再次点击处理视频按钮");
+            // 在某些情况下，用户可能需要第二次点击按钮来开始处理
+            sourceVideo.addEventListener('play', function () {
+              if (videoProcessing) {
+                startRecording();
+                processVideoFrame();
+              }
+            }, { once: true });
+          });
+        } else {
+          // 旧浏览器不返回Promise
+          startRecording();
+          processVideoFrame();
+        }
+      }
+    });
+    // ... existing code ...
+
+    // 开始录制
+    function startRecording() {
+      // 重置录制数据
+      recordedChunks = [];
+
+      // 创建媒体录制器
+      const stream = displayCanvas.captureStream(30); // 30 FPS
+
+      // 尝试不同的MIME类型，优先选择兼容性更好的格式
+      const mimeTypes = [
+        'video/mp4;codecs=avc1',
+        'video/mp4;codecs=vp9',
+        'video/mp4',
+        'video/webm;codecs=vp9',
+        'video/webm'
+      ];
+
+      let selectedMimeType = mimeTypes[0];
+      recordedMimeType = selectedMimeType;
+
+      // 查找支持的MIME类型
+      for (const mimeType of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+          selectedMimeType = mimeType;
+          recordedMimeType = mimeType;
+          break;
+        }
+      }
+
+      try {
+        mediaRecorder = new MediaRecorder(stream, {
+          mimeType: selectedMimeType
+        });
+      } catch (e) {
+        // 如果指定MIME类型失败，使用默认配置
+        mediaRecorder = new MediaRecorder(stream);
+        recordedMimeType = mediaRecorder.mimeType;
+      }
+
+      mediaRecorder.ondataavailable = function (event) {
+        if (event.data.size > 0) {
+          recordedChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = function () {
+        saveVideoBtn.disabled = false;
+      };
+
+      mediaRecorder.start();
+      isRecording = true;
+      saveVideoBtn.disabled = true;
+    }
+
+    // 停止录制
+    function stopRecording() {
+      if (isRecording && mediaRecorder) {
+        mediaRecorder.stop();
+        isRecording = false;
+      }
+    }
+
     // 控件变化事件
     pixelSizeInput.addEventListener('change', resetDrawing);
     scaleFactorSelect.addEventListener('change', function () {
@@ -284,6 +519,10 @@
           img.src = event.target.result;
         };
         reader.readAsDataURL(imageInput.files[0]);
+      } else if (sourceVideo.src && !sourceVideo.paused) {
+        // 重新设置视频画布尺寸
+        initVideoCanvasSize();
+        resetDrawing();
       } else if (drawModeSelect) {
         startBtn.disabled = true;
         resetDrawing();
@@ -321,7 +560,34 @@
       link.click();
       document.body.removeChild(link);
     }
-  </script>
+
+    // 保存视频功能
+    function saveVideo() {
+      if (recordedChunks.length === 0) {
+        alert('没有录制的视频可供保存');
+        return;
+      }
+
+      const blob = new Blob(recordedChunks, { type: recordedMimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+      // 根据MIME类型确定文件扩展名
+      let extension = 'webm'; // 默认扩展名
+      if (recordedMimeType.includes('mp4')) {
+        extension = 'mp4';
+      } else if (recordedMimeType.includes('webm')) {
+        extension = 'webm';
+      }
+
+      link.download = `pixel-video-${timestamp}.${extension}`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }</script>
 </body>
 
 </html>
