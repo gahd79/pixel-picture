@@ -1,0 +1,157 @@
+body {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f0f0f0;
+}
+
+.container {
+  background: white;
+  padding: 2.083vw;
+  /* 20px / 960px ≈ 2.083vw */
+  border-radius: 1.042vw;
+  /* 10px / 960px ≈ 1.042vw */
+  box-shadow: 0 0 1.042vw rgba(0, 0, 0, 0.1);
+  /* 10px / 960px ≈ 1.042vw */
+  width: 90vw;
+  max-width: 93.75vw;
+  /* 900px / 960px ≈ 93.75vw */
+}
+
+canvas {
+  border: 0.104vw solid #ddd;
+  /* 1px / 960px ≈ 0.104vw */
+  margin-bottom: 2.083vw;
+  /* 20px / 960px ≈ 2.083vw */
+  width: 100%;
+  max-width: 83.33vw;
+  /* 2560px / 960px ≈ 83.333vw */
+  height: auto;
+}
+
+.controls {
+  display: flex;
+  gap: 1.042vw;
+  /* 10px / 960px ≈ 1.042vw */
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+button,
+input[type="file"],
+select {
+  padding: 0.833vw 1.563vw;
+  /* 8px & 15px / 960px ≈ 0.833vw & 1.563vw */
+  border: 0.104vw solid #ddd;
+  /* 1px / 960px ≈ 0.104vw */
+  border-radius: 0.417vw;
+  /* 4px / 960px ≈ 0.417vw */
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 1.042vw;
+  /* 10px / 960px ≈ 1.042vw */
+}
+
+button:hover {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+input[type="number"] {
+  padding: 0.521vw;
+  /* 5px / 960px ≈ 0.521vw */
+  width: 6.25vw;
+  /* 60px / 960px ≈ 6.25vw */
+  border: 0.104vw solid #ddd;
+  /* 1px / 960px ≈ 0.104vw */
+  border-radius: 0.417vw;
+  /* 4px / 960px ≈ 0.417vw */
+  font-size: 1.042vw;
+  /* 10px / 960px ≈ 1.042vw */
+}
+
+/* 修改: 更新 customChar 样式以适应 textarea */
+#customChar {
+  transition: opacity 0.3s;
+  vertical-align: middle;
+  font-family: Arial, sans-serif;
+  padding: 0.521vw;
+  /* 5px / 960px ≈ 0.521vw */
+  border: 0.104vw solid #ddd;
+  /* 1px / 960px ≈ 0.104vw */
+  border-radius: 0.417vw;
+  /* 4px / 960px ≈ 0.417vw */
+  font-size: 1.042vw;
+  /* 10px / 960px ≈ 1.042vw */
+  width: 15.625vw;
+  /* 150px / 960px ≈ 15.625vw */
+  height: 6.25vw;
+  /* 60px / 960px ≈ 6.25vw */
+}
+
+/* 添加移动端适配 */
+@media (max-width < 1000px) {
+  .container {
+    padding: 3.906vw;
+    /* 15px / 384px ≈ 3.906vw (基于768px屏幕) */
+    width: 95vw;
+  }
+
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  button,
+  input[type="file"],
+  select,
+  textarea {
+    width: 100%;
+    margin-bottom: 1.302vw;
+    /* 5px / 384px ≈ 1.302vw (基于768px屏幕) */
+    padding: 2.604vw;
+    /* 10px / 384px ≈ 2.604vw (基于768px屏幕) */
+    font-size: 3.906vw;
+    /* 15px / 384px ≈ 3.906vw (基于768px屏幕) */
+  }
+
+  input[type="number"] {
+    width: 100%;
+    padding: 2.604vw;
+    /* 10px / 384px ≈ 2.604vw (基于768px屏幕) */
+    font-size: 3.906vw;
+    /* 15px / 384px ≈ 3.906vw (基于768px屏幕) */
+  }
+
+  #customChar {
+    width: 100% !important;
+    height: 15.625vw !important;
+    /* 60px / 384px ≈ 15.625vw (基于768px屏幕) */
+    font-size: 3.906vw;
+    /* 15px / 384px ≈ 3.906vw (基于768px屏幕) */
+  }
+
+  canvas {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 4.167vw;
+    /* 10px / 240px ≈ 4.167vw (基于480px屏幕) */
+  }
+
+  button,
+  input[type="file"],
+  select {
+    padding: 5vw;
+    /* 12px / 240px ≈ 5vw (基于480px屏幕) */
+    font-size: 4.167vw;
+    /* 10px / 240px ≈ 4.167vw (基于480px屏幕) */
+  }
+}

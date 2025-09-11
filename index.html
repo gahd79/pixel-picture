@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <title>像素复原动画</title>
+  <link rel="stylesheet" href="style.css">
+  <style></style>
+</head>
+
+<body>
+  <div class="container">
+    <canvas id="sourceCanvas" hidden></canvas>
+    <canvas id="displayCanvas"></canvas>
+    <div class="controls">
+      <input type="file" id="imageInput" accept="image/*">
+      <button id="startBtn">开始复原</button>
+      <label>像素尺寸：<input type="number" id="pixelSize" value="10" min="1"></label>
+      <!-- 添加倍数选择控件 -->
+      <label>图像倍数：
+        <input type="number" id="scaleFactor" value="1">
+      </label>
+      <label>像素样式：
+        <select id="pixelType">
+          <option value="square">方块</option>
+          <option value="circle">圆形</option>
+          <option value="char">文字</option>
+          <option value="symbol">符号</option>
+        </select>
+      </label>
+      <!-- 修改: 使用 textarea 替代 input，支持输入多行文字 -->
+      <textarea id="customChar" placeholder="输入文字"
+        style="display: none; width: 150px; height: 60px; resize: vertical;"></textarea>
+      <!-- 添加绘制模式选择 -->
+      <label>绘制模式：
+        <select id="drawMode">
+          <option value="animation">动画绘制</option>
+          <option value="direct">直接生成</option>
+        </select>
+      </label>
+      <button id="saveBtn">保存图像</button>
+    </div>
+  </div>
+  <video id="sourceVideo" hidden></video>
+  <script src="app.js"></script>
+</body>
+
+</html>
