@@ -32,6 +32,7 @@ let videoAnimationFrameId = null;
 let mediaRecorder = null;
 let recordedChunks = [];
 let isRecording = false;
+let recordedMimeType = 'video/webm'; // 默认MIME类型
 
 // 初始化画布尺寸
 function initCanvasSize(img) {
@@ -297,9 +298,37 @@ function startRecording() {
   
   // 创建媒体录制器
   const stream = displayCanvas.captureStream(30); // 30 FPS
-  mediaRecorder = new MediaRecorder(stream, {
-    mimeType: 'video/webm;codecs=vp9'
-  });
+  
+  // 尝试不同的MIME类型，优先选择兼容性更好的格式
+  const mimeTypes = [
+    'video/mp4;codecs=avc1',
+    'video/mp4;codecs=vp9',
+    'video/mp4',
+    'video/webm;codecs=vp9',
+    'video/webm'
+  ];
+  
+  let selectedMimeType = mimeTypes[0];
+  recordedMimeType = selectedMimeType;
+  
+  // 查找支持的MIME类型
+  for (const mimeType of mimeTypes) {
+    if (MediaRecorder.isTypeSupported(mimeType)) {
+      selectedMimeType = mimeType;
+      recordedMimeType = mimeType;
+      break;
+    }
+  }
+  
+  try {
+    mediaRecorder = new MediaRecorder(stream, {
+      mimeType: selectedMimeType
+    });
+  } catch (e) {
+    // 如果指定MIME类型失败，使用默认配置
+    mediaRecorder = new MediaRecorder(stream);
+    recordedMimeType = mediaRecorder.mimeType;
+  }
 
   mediaRecorder.ondataavailable = function(event) {
     if (event.data.size > 0) {
@@ -388,11 +417,20 @@ function saveVideo() {
     return;
   }
 
-  const blob = new Blob(recordedChunks, { type: 'video/webm' });
+  const blob = new Blob(recordedChunks, { type: recordedMimeType });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  link.download = `pixel-video-${timestamp}.webm`;
+  
+  // 根据MIME类型确定文件扩展名
+  let extension = 'webm'; // 默认扩展名
+  if (recordedMimeType.includes('mp4')) {
+    extension = 'mp4';
+  } else if (recordedMimeType.includes('webm')) {
+    extension = 'webm';
+  }
+  
+  link.download = `pixel-video-${timestamp}.${extension}`;
   link.href = url;
   document.body.appendChild(link);
   link.click();
