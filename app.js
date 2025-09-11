@@ -1,9 +1,10 @@
-
 const sourceCanvas = document.getElementById('sourceCanvas');
 const displayCanvas = document.getElementById('displayCanvas');
 const ctx = displayCanvas.getContext('2d');
 const imageInput = document.getElementById('imageInput');
+const videoInput = document.getElementById('videoInput');
 const startBtn = document.getElementById('startBtn');
+const startVideoBtn = document.getElementById('startVideoBtn');
 const pixelSizeInput = document.getElementById('pixelSize');
 const scaleFactorSelect = document.getElementById('scaleFactor');
 const pixelTypeSelect = document.getElementById('pixelType');
@@ -20,6 +21,11 @@ let imageData = null;
 let animationFrameId = null;
 let currentStep = 0;
 let isGenerationComplete = false;
+// 视频相关变量
+let sourceVideo = document.getElementById('sourceVideo');
+let videoStream = null;
+let videoProcessing = false;
+let videoAnimationFrameId = null;
 
 // 初始化画布尺寸
 function initCanvasSize(img) {
@@ -42,6 +48,18 @@ function initCanvasSize(img) {
 
   // 获取像素数据
   imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+}
+
+// 初始化视频画布尺寸
+function initVideoCanvasSize() {
+  const scaleFactor = scaleFactorSelect.value;
+  
+  // 根据倍数调整视频尺寸
+  const targetWidth = Math.trunc(sourceVideo.videoWidth * scaleFactor);
+  const targetHeight = Math.trunc(sourceVideo.videoHeight * scaleFactor);
+
+  sourceCanvas.width = displayCanvas.width = targetWidth;
+  sourceCanvas.height = displayCanvas.height = targetHeight;
 }
 
 // 像素绘制动画
@@ -67,6 +85,45 @@ function drawPixelAnimation() {
 
   currentStep++;
   animationFrameId = requestAnimationFrame(drawPixelAnimation);
+}
+
+// 视频像素化处理
+function processVideoFrame() {
+  if (sourceVideo.paused || sourceVideo.ended) {
+    videoProcessing = false;
+    startVideoBtn.disabled = false;
+    startVideoBtn.textContent = '处理视频';
+    return;
+  }
+
+  // 将当前视频帧绘制到源画布上
+  const sourceCtx = sourceCanvas.getContext('2d');
+  sourceCtx.drawImage(sourceVideo, 0, 0, sourceCanvas.width, sourceCanvas.height);
+  
+  // 获取图像数据
+  imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+  
+  // 像素化处理
+  const pixelSize = parseInt(pixelSizeInput.value);
+  const pixelType = pixelTypeSelect.value;
+  const cols = Math.ceil(displayCanvas.width / pixelSize);
+  const rows = Math.ceil(displayCanvas.height / pixelSize);
+  
+  // 清除显示画布
+  ctx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
+  
+  // 绘制像素化帧
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const x = col * pixelSize;
+      const y = row * pixelSize;
+      const color = getPixelColor(x, y, pixelSize);
+      drawPixel(x, y, pixelSize, pixelType, color);
+    }
+  }
+  
+  // 继续处理下一帧
+  videoAnimationFrameId = requestAnimationFrame(processVideoFrame);
 }
 
 // 添加直接生成功能
@@ -133,12 +190,15 @@ function getPixelColor(x, y, size) {
   return `rgb(${data[index]}, ${data[index + 1]}, ${data[index + 2]})`;
 }
 
-
 // 事件监听
 imageInput.addEventListener('change', function (e) {
   const file = e.target.files[0];
   if (!file) return;
 
+  // 隐藏视频处理按钮，显示图片处理按钮
+  startVideoBtn.style.display = 'none';
+  startBtn.style.display = 'inline-block';
+  
   const reader = new FileReader();
   reader.onload = function (event) {
     const img = new Image();
@@ -150,6 +210,25 @@ imageInput.addEventListener('change', function (e) {
     img.src = event.target.result;
   };
   reader.readAsDataURL(file);
+});
+
+videoInput.addEventListener('change', function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // 显示视频处理按钮，隐藏图片处理按钮
+  startBtn.style.display = 'none';
+  startVideoBtn.style.display = 'inline-block';
+  
+  // 为视频元素设置源
+  const url = URL.createObjectURL(file);
+  sourceVideo.src = url;
+  
+  sourceVideo.onloadedmetadata = function() {
+    initVideoCanvasSize();
+    ctx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
+    currentStep = 0;
+  };
 });
 
 startBtn.addEventListener('click', function () {
@@ -171,6 +250,26 @@ startBtn.addEventListener('click', function () {
   }
 });
 
+// 视频处理按钮事件
+startVideoBtn.addEventListener('click', function () {
+  if (videoProcessing) {
+    // 停止处理
+    videoProcessing = false;
+    if (videoAnimationFrameId) {
+      cancelAnimationFrame(videoAnimationFrameId);
+    }
+    sourceVideo.pause();
+    startVideoBtn.textContent = '处理视频';
+    startVideoBtn.disabled = false;
+  } else {
+    // 开始处理
+    videoProcessing = true;
+    startVideoBtn.textContent = '停止处理';
+    sourceVideo.play();
+    processVideoFrame();
+  }
+});
+
 // 控件变化事件
 pixelSizeInput.addEventListener('change', resetDrawing);
 scaleFactorSelect.addEventListener('change', function () {
@@ -186,6 +285,10 @@ scaleFactorSelect.addEventListener('change', function () {
       img.src = event.target.result;
     };
     reader.readAsDataURL(imageInput.files[0]);
+  } else if (sourceVideo.src && !sourceVideo.paused) {
+    // 重新设置视频画布尺寸
+    initVideoCanvasSize();
+    resetDrawing();
   } else if (drawModeSelect) {
     startBtn.disabled = true;
     resetDrawing();

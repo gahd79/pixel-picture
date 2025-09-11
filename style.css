@@ -42,7 +42,7 @@ canvas {
 button,
 input[type="file"],
 select {
-  padding: 0.833vw 1.563vw;
+  padding: 0.833vw 0.833vw;
   /* 8px & 15px / 960px ≈ 0.833vw & 1.563vw */
   border: 0.104vw solid #ddd;
   /* 1px / 960px ≈ 0.104vw */
@@ -52,6 +52,7 @@ select {
   cursor: pointer;
   transition: all 0.3s;
   font-size: 1.042vw;
+  max-width: 10vw;
   /* 10px / 960px ≈ 1.042vw */
 }
 
