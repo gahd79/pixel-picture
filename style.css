@@ -69,7 +69,7 @@ select {
   /* 8px & 15px / 960px ≈ 0.833vw & 1.563vw */
   border: 0.104vw solid #ddd;
   /* 1px / 960px ≈ 0.104vw */
-  border-radius: 0.417vw;
+  border-radius: 1vw;
   /* 4px / 960px ≈ 0.417vw */
   background: #fff;
   cursor: pointer;

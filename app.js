@@ -184,7 +184,7 @@ function drawPixel(x, y, size, type, color) {
         const index = Math.floor(y / size) * Math.ceil(displayCanvas.width / size) + Math.floor(x / size);
         char = customText[index % customText.length];
       } else {
-        char = '♠';
+        char = '*';
       }
       ctx.font = `${size}px Arial`;
       ctx.textAlign = 'center';
